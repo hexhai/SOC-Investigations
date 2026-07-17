@@ -13,7 +13,7 @@ I'm a cybersecurity graduate (WGU, Cybersecurity and Information Assurance) with
 | # | Investigation | Tools Used | Frameworks |
 |---|---|---|---|
 | 01 | [Phishing Campaign Investigation](./01-phishing-campaign-investigation) | Thunderbird, CyberChef, VirusTotal, sha256sum | NIST SP 800-61, MITRE ATT&CK |
-| 02 | Full Attack Chain Investigation — *in progress* | EvtxECmd, Timeline Explorer, SysmonView, Wireshark, CyberChef, VirusTotal | NIST SP 800-61, MITRE ATT&CK |
+| 02 | [Full Attack Chain Investigation](./02-full-attack-chain-investigation) | EvtxECmd, Timeline Explorer, SysmonView, Wireshark, CyberChef, VirusTotal, AbuseIPDB | NIST SP 800-61, MITRE ATT&CK |
 
 More investigations in progress — this table grows as each one is completed and pushed.
 
@@ -22,9 +22,10 @@ Each folder contains a full write-up with screenshots, IOC tables, and a timelin
 ## Skills Demonstrated Across This Repo
 
 - **Email/phishing forensics** — header analysis, SPF/DKIM/DMARC validation, display-spoofing detection
-- **Log correlation & timeline reconstruction** — Windows Event Logs, Sysmon telemetry
+- **Log correlation & timeline reconstruction** — Windows Event Logs, Sysmon telemetry, EvtxECmd/Timeline Explorer/SysmonView
 - **Threat intel enrichment** — VirusTotal, AbuseIPDB, URLScan
 - **Malware/phishing kit analysis** — source code review, behavioral indicators
+- **Full attack chain analysis** — exploit-to-persistence process lineage, C2 traffic decoding, privilege escalation and lateral movement tracing
 - **Incident documentation** — NIST SP 800-61 process, MITRE ATT&CK technique mapping
 
 ---
